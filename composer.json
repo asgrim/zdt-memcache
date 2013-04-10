@@ -1,0 +1,25 @@
+{
+    "name": "asgrim/zdt-memcache",
+    "description": "Zend Developer Tools module to enable Memcache listening",
+    "type": "library",
+    "license": "MIT",
+    "keywords": ["zf2","zdt"],
+    "homepage": "http://www.github.com/asgrim/zdt-memcache",
+    "authors": [
+        {
+            "name": "James Titcumb",
+            "email": "hello@jamestitcumb.com",
+            "homepage": "http://www.jamestitcumb.com/"
+        }
+    ],
+    "require": {
+        "php": ">=5.3.3",
+        "zendframework/zend-developer-tools": "dev-master"
+    },
+    "minimum-stability": "dev",
+    "autoload": {
+        "psr-0": {
+            "ZdtMemcache\\": "src/"
+        }
+    }
+}
