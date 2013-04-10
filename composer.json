@@ -24,9 +24,9 @@
     "autoload": {
         "psr-0": {
             "ZdtMemcache\\": "src/"
-        }
+        },
         "classmap": [
-            "./Module.php",
+            "./Module.php"
         ]
     }
 }
