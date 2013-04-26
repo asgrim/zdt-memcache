@@ -5,10 +5,23 @@ namespace ZdtMemcache\Collector;
 use ZendDeveloperTools\Collector\AbstractCollector;
 use ZendDeveloperTools\Collector\AutoHideInterface;
 use Zend\Mvc\MvcEvent;
-use Memcache;
+use Memcached;
 
 class Collector extends AbstractCollector implements AutoHideInterface
 {
+    /**
+     * @var \Memcached
+     */
+    protected $memcache;
+
+    /**
+     * @param \Memcached $memcached
+     */
+    public function __construct(Memcached $memcached)
+    {
+        $this->memcached = $memcached;
+    }
+
     public function getName()
     {
         return "zdt-memcache";
@@ -25,27 +38,32 @@ class Collector extends AbstractCollector implements AutoHideInterface
             $this->data = array();
         }
 
-        $mc = new Memcache();
-        $mc->addserver('localhost', 11211);
-
-        $stats = $mc->getStats();
+        $allStats = $this->memcached->getStats();
 
         $data = array();
 
-        // Cache usage
-        $data['cache_size'] = (int)$stats['limit_maxbytes'];
-        $data['cache_used'] = (int)$stats['bytes'];
-        $data['cache_free'] = $data['cache_size'] - $data['cache_used'];
+        foreach($allStats as $server => $stats)
+        {
+            // Cache usage
+            $data[$server]['cache_size'] = (int)$stats['limit_maxbytes'];
+            $data[$server]['cache_used'] = (int)$stats['bytes'];
+            $data[$server]['cache_free'] = $data[$server]['cache_size'] - $data[$server]['cache_used'];
 
-        // Hits & misses
-        $data['hits'] = (int)$stats['get_hits'];
-        $data['misses'] = (int)$stats['get_misses'];
-        $data['get_total'] = $data['hits'] + $data['misses'];
+            // Hits & misses
+            $data[$server]['hits'] = (int)$stats['get_hits'];
+            $data[$server]['misses'] = (int)$stats['get_misses'];
+            $data[$server]['get_total'] = $data[$server]['hits'] + $data[$server]['misses'];
 
-        // Raw data
-        $data['raw'] = $stats;
+            // Raw data
+            $data[$server]['raw'] = $stats;
+        }
 
         $this->data = $data;
+    }
+
+    public function getServers()
+    {
+        return array_keys($this->data);
     }
 
     public function canHide()
@@ -53,11 +71,11 @@ class Collector extends AbstractCollector implements AutoHideInterface
         return false;
     }
 
-    public function getStat($stat, $default = null)
+    public function getStat($server, $stat, $default = null)
     {
-        if (isset($this->data[$stat]))
+        if (isset($this->data[$server][$stat]))
         {
-            return $this->data[$stat];
+            return $this->data[$server][$stat];
         }
         else
         {
@@ -65,10 +83,10 @@ class Collector extends AbstractCollector implements AutoHideInterface
         }
     }
 
-    public function getPercent($numerator, $denominator, $precision = 2)
+    public function getPercent($server, $numerator, $denominator, $precision = 2)
     {
-        $num = (float)$this->getStat($numerator, 0);
-        $den = (float)$this->getStat($denominator, 0);
+        $num = (float)$this->getStat($server, $numerator, 0);
+        $den = (float)$this->getStat($server, $denominator, 0);
 
         if ($den > 0)
         {
@@ -80,9 +98,9 @@ class Collector extends AbstractCollector implements AutoHideInterface
         }
     }
 
-    public function getByteStat($stat)
+    public function getByteStat($server, $stat)
     {
-        $s = (int)$this->getStat($stat, 0);
+        $s = (int)$this->getStat($server, $stat, 0);
 
         foreach (array('','K','M','G') as $i => $k)
         {
